@@ -1,0 +1,345 @@
+import string
+
+
+def add_labels_to_subplots(axs, hfont, height):
+    labels_subplots = list(string.ascii_uppercase)
+    for i, ax in enumerate(axs):
+        ax.text(
+            ax.get_xlim()[0],
+            ax.get_ylim()[1] * height,
+            labels_subplots[i],
+            fontsize=30,
+            **hfont,
+        )
+    return labels_subplots
+
+
+### this code it's exactly in  x weeks
+def merge_and_rename_data(data1, data2, on_column, suffix1, suffix2):
+    merged_data = pd.merge(
+        data1, data2, on=on_column, suffixes=("_" + suffix1, "_" + suffix2)
+    )
+
+    new_column_names = [
+        col.replace(f"_{on_column}_{suffix1}", f"_{suffix1}").replace(
+            f"_{on_column}_{suffix2}", f"_{suffix2}"
+        )
+        for col in merged_data.columns
+    ]
+    merged_data.rename(
+        columns=dict(zip(merged_data.columns, new_column_names)), inplace=True
+    )
+
+    return merged_data
+
+
+def pivot_data_by_HSA(data, index_column, columns_column, values_column):
+    data_by_HSA = data[[index_column, columns_column, values_column]]
+    pivot_table = data_by_HSA.pivot_table(
+        index=index_column, columns=columns_column, values=values_column
+    )
+    return pivot_table
+
+
+def create_column_names(categories_for_subsetting, num_of_weeks):
+    column_names = ["HSA_ID"]
+
+    for week in range(1, num_of_weeks + 1):
+        week = num2words(week)
+        for category in categories_for_subsetting:
+            column_name = f"week_{week}_{category}"
+            column_names.append(column_name)
+
+    return column_names
+
+
+def create_collated_weekly_data(
+    pivoted_table, original_data, categories_for_subsetting, geography, column_names
+):
+    collated_data = pd.DataFrame(index=range(51), columns=column_names)
+
+    x = 0
+    for geo in original_data[geography].unique():
+        # matching_indices = [i for i, geo_col in enumerate(pivoted_table) if geo_col == geo]
+        collated_data.loc[x, geography] = geo
+        columns_to_subset = [
+            f"{geo}_{category}" for category in categories_for_subsetting
+        ]
+        j = 1
+        try:
+            for row in range(len(pivoted_table.loc[:, columns_to_subset])):
+                collated_data.iloc[
+                    x, j : j + len(categories_for_subsetting)
+                ] = pivoted_table.loc[row, columns_to_subset]
+                j += len(categories_for_subsetting)
+        except:
+            pass
+        x += 1
+
+    return collated_data
+
+
+def add_changes_by_week(weekly_data_frame, outcome_column):
+    for column in weekly_data_frame.columns[1:]:
+        # Calculate the difference between each row and the previous row
+        if outcome_column not in column.lower():  # want to leave out the outcome column
+            diff = weekly_data_frame[column].diff()
+
+            # Create a new column with the original column name and "delta"
+            new_column_name = column + "_delta"
+
+            column_index = weekly_data_frame.columns.get_loc(column)
+
+            # Insert the new column just after the original column
+            weekly_data_frame.insert(column_index + 1, new_column_name, diff)
+            weekly_data_frame[new_column_name] = diff
+    return weekly_data_frame
+
+
+def prep_training_test_data_period(
+    data, no_weeks, weeks_in_futre, if_train, geography, weight_col, keep_output
+):
+    ## Get the weeks for the x and y datasets
+    x_weeks = []
+    y_weeks = []
+    y_weeks_to_check = []  # check these weeks to see if any of them are equal to 1
+    for week in no_weeks:
+        test_week = int(week) + weeks_in_futre
+        x_weeks.append("_" + num2words(week) + "_")
+        for week_y in range(week + 1, test_week + 1):
+            y_weeks_to_check.append("_" + num2words(week_y) + "_")
+        y_weeks.append("_" + num2words(test_week) + "_")
+
+    ## Divide up the test/train split
+    # if is_geographic:
+    # Calculate the index to start slicing from
+    #    start_index = len(data['county']) // proportion[0] * proportion[1]
+    # Divide up the dataset based on this proportion
+    #    first_two_thirds = data['county'][:start_index]
+    #    last_third = data['county'][start_index:]
+    X_data = pd.DataFrame()
+    y_data = pd.DataFrame()
+    weights_all = pd.DataFrame()
+    missing_data = []
+    ## Now get the training data
+    k = 0
+    for x_week in x_weeks:
+        y_week = y_weeks[k]
+        k += 1
+
+        weeks_x = [col for col in data.columns if x_week in col]
+        columns_x = [geography] + weeks_x + [weight_col]
+        data_x = data[columns_x]
+
+        weeks_y = [col for col in data.columns if y_week in col]
+        columns_y = [geography] + weeks_y
+        data_y = data[columns_y]
+        ### now add the final column to the y data that has it so that it's if any week in the trhee week perdiod exceeded 15
+        train_week = w2n.word_to_num(x_week.replace("_", ""))
+        target_week = w2n.word_to_num(y_week.replace("_", ""))
+        y_weeks_to_check = []
+        for week_to_check in range(train_week + 1, target_week + 1):
+            y_weeks_to_check.append("_" + num2words(week_to_check) + "_")
+
+        y_weeks_to_check = [week + "beds_over_15_100k" for week in y_weeks_to_check]
+        columns_to_check = [
+            col for col in data.columns if any(week in col for week in y_weeks_to_check)
+        ]
+        y_over_in_period = data[columns_to_check].apply(max, axis=1)
+        data_y = pd.concat([data_y, y_over_in_period], axis=1)
+        # ensure they have the same amount of data
+        # remove rows in test_data1 with NA in test_data2
+        data_x = data_x.dropna()
+        data_x = data_x[data_x[geography].isin(data_y[geography])]
+        # remove rows in test_data2 with NA in test_data1
+        data_y = data_y.dropna()
+        data_y = data_y[data_y[geography].isin(data_x[geography])]
+        data_x = data_x[data_x[geography].isin(data_y[geography])]
+        data_x_no_HSA = len(data_x[geography].unique())
+
+        missing_data.append(
+            (
+                (len(data[geography].unique()) - data_x_no_HSA)
+                / len(data[geography].unique())
+            )
+            * 100
+        )
+        # get weights
+        # weights = weight_data[weight_data[geography].isin(data_x[geography])][[geography, weight_col]]
+
+        X_week = data_x.iloc[:, 1 : len(columns_x)]  # take away y, leave weights for mo
+        y_week = data_y.iloc[:, -1]
+
+        y_week = y_week.astype(int)
+        if if_train:
+            X_week, y_week = oversample.fit_resample(X_week, y_week)
+        weights = X_week.iloc[:, -1]
+        if keep_output:
+            X_week = X_week.iloc[
+                :, : len(X_week.columns) - 1
+            ]  # remove the weights and leave "target" for that week
+
+            # rename columns for concatenation
+            X_week.columns = range(1, len(data_x.columns) - 1)
+        else:
+            X_week = X_week.iloc[
+                :, : len(X_week.columns) - 2
+            ]  # remove the weights and  "target" for that week
+
+            X_week.columns = range(
+                1, len(data_x.columns) - 2
+            )  # remove the weights and  "target" for that week
+
+        y_week.columns = range(1, len(data_y.columns) - 2)
+        X_data = pd.concat([X_data, X_week])
+        y_data = pd.concat([y_data, y_week])
+
+        weights_all = pd.concat([weights_all, weights])
+
+    X_data.reset_index(drop=True, inplace=True)
+    y_data.reset_index(drop=True, inplace=True)
+    weights_all.reset_index(drop=True, inplace=True)
+
+    return (X_data, y_data, weights_all, missing_data)
+
+
+### this code it's ANY in the x week period
+def prep_training_test_data(
+    data, no_weeks, weeks_in_futre, if_train, geography, weight_col, keep_output
+):
+    ## Get the weeks for the x and y datasets
+    x_weeks = []
+    y_weeks = []
+    for week in no_weeks:
+        test_week = int(week) + weeks_in_futre
+        x_weeks.append("_" + num2words(week) + "_")
+        y_weeks.append("_" + num2words(test_week) + "_")
+
+    X_data = pd.DataFrame()
+    y_data = pd.DataFrame()
+    weights_all = pd.DataFrame()
+    missing_data = []
+    ## Now get the training data
+    k = 0
+    for x_week in x_weeks:
+        y_week = y_weeks[k]
+        k += 1
+        weeks_x = [col for col in data.columns if x_week in col]
+        columns_x = [geography] + weeks_x + [weight_col]
+        data_x = data[columns_x]
+
+        weeks_y = [col for col in data.columns if y_week in col]
+        columns_y = [geography] + weeks_y
+        data_y = data[columns_y]
+        # ensure they have the same amount of data
+        # remove rows in test_data1 with NA in test_data2
+        data_x = data_x.dropna()
+        data_x = data_x[data_x[geography].isin(data_y[geography])]
+        # remove rows in test_data2 with NA in test_data1
+        data_y = data_y.dropna()
+        data_y = data_y[data_y[geography].isin(data_x[geography])]
+        data_x = data_x[data_x[geography].isin(data_y[geography])]
+        data_x_no_HSA = len(data_x[geography].unique())
+
+        missing_data.append(
+            (
+                (len(data[geography].unique()) - data_x_no_HSA)
+                / len(data[geography].unique())
+            )
+            * 100
+        )
+        # get weights
+        # weights = weight_data[weight_data[geography].isin(data_x[geography])][[geography, weight_col]]
+
+        X_week = data_x.iloc[:, 1 : len(columns_x)]  # take away y, leave weights for mo
+        y_week = data_y.iloc[:, -1]
+
+        y_week = y_week.astype(int)
+        if if_train:
+            X_week, y_week = oversample.fit_resample(X_week, y_week)
+        weights = X_week.iloc[:, -1]
+        if keep_output:
+            X_week = X_week.iloc[
+                :, : len(X_week.columns) - 1
+            ]  # remove the weights and leave "target" for that week
+
+            # rename columns for concatenation
+            X_week.columns = range(1, len(data_x.columns) - 1)
+        else:
+            X_week = X_week.iloc[
+                :, : len(X_week.columns) - 2
+            ]  # remove the weights and  "target" for that week
+
+            X_week.columns = range(
+                1, len(data_x.columns) - 2
+            )  # remove the weights and  "target" for that week
+
+            # rename columns for concatenation
+        y_week.columns = range(1, len(data_y.columns) - 1)
+        X_data = pd.concat([X_data, X_week])
+        y_data = pd.concat([y_data, y_week])
+
+        weights_all = pd.concat([weights_all, weights])
+
+    X_data.reset_index(drop=True, inplace=True)
+    y_data.reset_index(drop=True, inplace=True)
+    weights_all.reset_index(drop=True, inplace=True)
+
+    return (X_data, y_data, weights_all, missing_data)
+
+
+def calculate_ppv_npv(confusion_matrix):
+    # Extract values from the confusion matrix
+    TP = confusion_matrix[1, 1]
+    FP = confusion_matrix[0, 1]
+    TN = confusion_matrix[0, 0]
+    FN = confusion_matrix[1, 0]
+
+    # Calculate PPV (Precision) and NPV
+    ppv = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    npv = TN / (TN + FN) if (TN + FN) > 0 else 0.0
+
+    return ppv, npv
+
+
+def merge_and_rename_data(data1, data2, on_column, suffix1, suffix2):
+    merged_data = pd.merge(
+        data1, data2, on=on_column, suffixes=("_" + suffix1, "_" + suffix2)
+    )
+
+    new_column_names = [
+        col.replace(f"_{on_column}_{suffix1}", f"_{suffix1}").replace(
+            f"_{on_column}_{suffix2}", f"_{suffix2}"
+        )
+        for col in merged_data.columns
+    ]
+    merged_data.rename(
+        columns=dict(zip(merged_data.columns, new_column_names)), inplace=True
+    )
+
+    return merged_data
+
+
+def pivot_data_by_HSA(data, index_column, columns_column, values_column):
+    data_by_HSA = data[[index_column, columns_column, values_column]]
+    pivot_table = data_by_HSA.pivot_table(
+        index=index_column, columns=columns_column, values=values_column
+    )
+    return pivot_table
+
+
+def add_changes_by_week(weekly_data_frame, outcome_column):
+    for column in weekly_data_frame.columns[1:]:
+        # Calculate the difference between each row and the previous row
+        if outcome_column not in column.lower():  # want to leave out the outcome column
+            diff = weekly_data_frame[column].diff()
+
+            # Create a new column with the original column name and "delta"
+            new_column_name = column + "_delta"
+
+            column_index = weekly_data_frame.columns.get_loc(column)
+
+            # Insert the new column just after the original column
+            weekly_data_frame.insert(column_index + 1, new_column_name, diff)
+            weekly_data_frame[new_column_name] = diff
+    return weekly_data_frame

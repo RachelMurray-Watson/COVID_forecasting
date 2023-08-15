@@ -349,3 +349,25 @@ def add_changes_by_week(weekly_data_frame, outcome_column):
             weekly_data_frame.insert(column_index + 1, new_column_name, diff)
             weekly_data_frame[new_column_name] = diff
     return weekly_data_frame
+
+
+def determine_covid_outcome_indicator(
+    new_cases_per_100k, new_admits_per_100k, percent_beds_100k
+):
+    if new_cases_per_100k < 200:
+        if (new_admits_per_100k >= 10) | (
+            percent_beds_100k > 0.10
+        ):  # Changed .10 to 0.10
+            if (new_admits_per_100k >= 20) | (percent_beds_100k >= 15):
+                return "High"
+            else:
+                return "Medium"
+        else:
+            return "Low"
+    elif new_cases_per_100k >= 200:
+        if (new_admits_per_100k >= 10) | (
+            percent_beds_100k >= 0.10
+        ):  # Changed .10 to 0.10
+            return "High"
+        elif (new_admits_per_100k < 10) | (percent_beds_100k < 10):
+            return "Medium"

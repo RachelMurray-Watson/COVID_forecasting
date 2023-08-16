@@ -1,6 +1,10 @@
 import string
 import pandas as pd
 from num2words import num2words
+import pydotplus
+from six import StringIO
+from IPython.display import Image
+import sklearn.tree as tree
 
 from word2number import w2n
 from sklearn.model_selection import train_test_split
@@ -391,3 +395,23 @@ def simplify_labels_graphviz(graph):
                 del split_label[0]  # split of samples
                 split_label[0] = "<" + split_label[0]
             node.set("label", "<br/>".join(split_label))
+
+
+def generate_decision_tree_graph(classifier, class_names, feature_names):
+    dot_data = StringIO()
+    tree.export_graphviz(
+        classifier,
+        out_file=dot_data,
+        class_names=class_names,
+        feature_names=feature_names,
+        filled=True,
+        rounded=True,
+        special_characters=True,
+        proportion=False,
+        precision=0,
+        impurity=False,
+    )
+
+    graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+
+    return graph

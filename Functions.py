@@ -7,14 +7,14 @@ from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import RandomOverSampler
 
 
-def add_labels_to_subplots(axs, hfont, height):
+def add_labels_to_subplots(axs, hfont, height, fontsize):
     labels_subplots = list(string.ascii_uppercase)
     for i, ax in enumerate(axs):
         ax.text(
             ax.get_xlim()[0],
             ax.get_ylim()[1] * height,
             labels_subplots[i],
-            fontsize=30,
+            fontsize=fontsize,
             **hfont,
         )
     return labels_subplots
@@ -371,3 +371,23 @@ def determine_covid_outcome_indicator(
             return "High"
         elif (new_admits_per_100k < 10) | (percent_beds_100k < 10):
             return "Medium"
+
+
+def simplify_labels_graphviz(graph):
+    for node in graph.get_node_list():
+        if node.get_attributes().get("label") is None:
+            continue
+        else:
+            split_label = node.get_attributes().get("label").split("<br/>")
+            if len(split_label) == 4:
+                split_label[3] = split_label[3].split("=")[1].strip()
+
+                del split_label[1]  # number of samples
+                del split_label[1]  # split of sample
+            elif len(split_label) == 3:  # for a terminating node, no rule is provided
+                split_label[2] = split_label[2].split("=")[1].strip()
+
+                del split_label[0]  # number of samples
+                del split_label[0]  # split of samples
+                split_label[0] = "<" + split_label[0]
+            node.set("label", "<br/>".join(split_label))

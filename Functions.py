@@ -107,7 +107,7 @@ def add_changes_by_week(weekly_data_frame, outcome_column):
 
 
 def prep_training_test_data_period(
-    data, no_weeks, weeks_in_futre, if_train, geography, weight_col, keep_output
+    data, no_weeks, weeks_in_futre, geography, weight_col, keep_output
 ):
     ## Get the weeks for the x and y datasets
     x_weeks = []
@@ -181,8 +181,6 @@ def prep_training_test_data_period(
         y_week = data_y.iloc[:, -1]
 
         y_week = y_week.astype(int)
-        if if_train:
-            X_week, y_week = oversample.fit_resample(X_week, y_week)
         weights = X_week.iloc[:, -1]
         if keep_output:
             X_week = X_week.iloc[
@@ -215,7 +213,7 @@ def prep_training_test_data_period(
 
 ### this code it's ANY in the x week period
 def prep_training_test_data(
-    data, no_weeks, weeks_in_futre, if_train, geography, weight_col, keep_output
+    data, no_weeks, weeks_in_futre, geography, weight_col, keep_output
 ):
     ## Get the weeks for the x and y datasets
     x_weeks = []
@@ -265,8 +263,6 @@ def prep_training_test_data(
         y_week = data_y.iloc[:, -1]
 
         y_week = y_week.astype(int)
-        if if_train:
-            X_week, y_week = oversample.fit_resample(X_week, y_week)
         weights = X_week.iloc[:, -1]
         if keep_output:
             X_week = X_week.iloc[

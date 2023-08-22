@@ -107,14 +107,14 @@ def add_changes_by_week(weekly_data_frame, outcome_column):
 
 
 def prep_training_test_data_period(
-    data, no_weeks, weeks_in_futre, geography, weight_col, keep_output
+    data, no_weeks, weeks_in_future, geography, weight_col, keep_output
 ):
     ## Get the weeks for the x and y datasets
     x_weeks = []
     y_weeks = []
     y_weeks_to_check = []  # check these weeks to see if any of them are equal to 1
     for week in no_weeks:
-        test_week = int(week) + weeks_in_futre
+        test_week = int(week) + weeks_in_future
         x_weeks.append("_" + num2words(week) + "_")
         for week_y in range(week + 1, test_week + 1):
             y_weeks_to_check.append("_" + num2words(week_y) + "_")
@@ -213,13 +213,13 @@ def prep_training_test_data_period(
 
 ### this code it's ANY in the x week period
 def prep_training_test_data(
-    data, no_weeks, weeks_in_futre, geography, weight_col, keep_output
+    data, no_weeks, weeks_in_future, geography, weight_col, keep_output
 ):
     ## Get the weeks for the x and y datasets
     x_weeks = []
     y_weeks = []
     for week in no_weeks:
-        test_week = int(week) + weeks_in_futre
+        test_week = int(week) + weeks_in_future
         x_weeks.append("_" + num2words(week) + "_")
         y_weeks.append("_" + num2words(test_week) + "_")
 

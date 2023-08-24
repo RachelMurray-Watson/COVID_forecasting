@@ -8,7 +8,6 @@ import sklearn.tree as tree
 
 from word2number import w2n
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import RandomOverSampler
 
 
 def add_labels_to_subplots(axs, hfont, height, fontsize):
@@ -411,3 +410,146 @@ def generate_decision_tree_graph(classifier, class_names, feature_names):
     graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
 
     return graph
+
+
+def cross_validation_leave_geo_out(
+    data,
+    geography_column,
+    geo_split,
+    no_iterations,
+    cv,
+    classifier,
+    param_grid,
+    no_iterations_param,
+    no_weeks_train,
+    no_weeks_test,
+    weeks_in_future,
+    weight_col,
+    keep_output,
+    time_period,
+):
+    best_hyperparameters_per_iter = []
+    auROC_per_iter = []
+
+    for i in range(no_iterations):
+        # subset the HSAs from the full dataset
+        geo_names = data[geography_column].unique()
+        num_names_to_select = int(geo_split * len(geo_names))
+        geos_for_sample = random.sample(list(geo_names), num_names_to_select)
+        subset_HSAs_for_train = data[data[geography_column].isin(geos_for_sample)]
+        subset_HSAs_for_test = data[~data[geography_column].isin(geos_for_sample)]
+
+        # create training and test data
+        if time_period == "period":
+            (
+                X_sample_train,
+                y_sample_train,
+                weights_train,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_period(
+                subset_HSAs_for_train,
+                no_weeks=no_weeks_train,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            (
+                X_sample_test,
+                y_sample_test,
+                weights_test,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_period(
+                subset_HSAs_for_test,
+                no_weeks=no_weeks_test,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            weights_train = weights_train[0]
+        elif time_period == "exact":
+            (
+                X_sample_train,
+                y_sample_train,
+                weights_train,
+                missing_data_train_HSA,
+            ) = prep_training_test_data(
+                subset_HSAs_for_train,
+                no_weeks=no_weeks_train,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            (
+                X_sample_test,
+                y_sample_test,
+                weights_test,
+                missing_data_train_HSA,
+            ) = prep_training_test_data(
+                subset_HSAs_for_test,
+                no_weeks=no_weeks_test,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            weights_train = weights_train[0]
+        elif time_period == "shifted":
+            (
+                X_sample_train,
+                y_sample_train,
+                weights_train,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_period(
+                subset_HSAs_for_train,
+                no_weeks=no_weeks_train,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            (
+                X_sample_test,
+                y_sample_test,
+                weights_test,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_period(
+                subset_HSAs_for_test,
+                no_weeks=no_weeks_test,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            weights_train = weights_train[0]
+            y_sample_train = y_sample_train.shift(-1)
+            y_sample_test = y_sample_test.shift(-1)
+
+            y_sample_train.drop(index=y_sample_train.index[-1], inplace=True)
+            y_sample_test.drop(index=y_sample_test.index[-1], inplace=True)
+
+            X_sample_train.drop(index=X_sample_train.index[-1], inplace=True)
+            X_sample_test.drop(index=X_sample_test.index[-1], inplace=True)
+
+            weights_train.drop(index=weights_train.index[-1], inplace=True)
+        random_search = RandomizedSearchCV(
+            classifier, param_grid, n_iter=no_iterations_param, cv=cv, random_state=10
+        )
+        random_search.fit(X_sample_train, y_sample_train, sample_weight=weights_train)
+        best_params = random_search.best_params_
+
+        # Create the Decision Tree classifier with the best hyperparameters
+        model = DecisionTreeClassifier(
+            **best_params, random_state=10, class_weight="balanced"
+        )
+        model_fit = model.fit(
+            X_sample_train, y_sample_train, sample_weight=weights_train
+        )
+        y_pred = model_fit.predict_proba(X_sample_test)
+        # Evaluate the accuracy of the model
+        best_hyperparameters_per_iter.append(best_params)
+        auROC_per_iter.append(roc_auc_score(y_sample_test, y_pred[:, 1]))
+
+    return best_hyperparameters_per_iter[np.argmax(np.array(auROC_per_iter))]

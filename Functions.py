@@ -294,18 +294,21 @@ def prep_training_test_data(
     return (X_data, y_data, weights_all, missing_data)
 
 
-def calculate_ppv_npv(confusion_matrix):
+def calculate_metrics(confusion_matrix):
     # Extract values from the confusion matrix
     TP = confusion_matrix[1, 1]
     FP = confusion_matrix[0, 1]
     TN = confusion_matrix[0, 0]
     FN = confusion_matrix[1, 0]
 
-    # Calculate PPV (Precision) and NPV
+    # Calculate Sensitivity (True Positive Rate), Specificity (True Negative Rate),
+    # PPV (Precision), and NPV
+    sensitivity = TP / (TP + FN) if (TP + FN) > 0 else 0.0
+    specificity = TN / (TN + FP) if (TN + FP) > 0 else 0.0
     ppv = TP / (TP + FP) if (TP + FP) > 0 else 0.0
     npv = TN / (TN + FN) if (TN + FN) > 0 else 0.0
 
-    return ppv, npv
+    return sensitivity, specificity, ppv, npv
 
 
 def merge_and_rename_data(data1, data2, on_column, suffix1, suffix2):

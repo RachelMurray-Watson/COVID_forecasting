@@ -9,6 +9,12 @@ import random
 
 from word2number import w2n
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import roc_auc_score
+
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def add_labels_to_subplots(axs, hfont, height, fontsize):
@@ -557,3 +563,32 @@ def cross_validation_leave_geo_out(
         auROC_per_iter.append(roc_auc_score(y_sample_test, y_pred[:, 1]))
 
     return best_hyperparameters_per_iter[np.argmax(np.array(auROC_per_iter))]
+
+
+def LOOCV_by_HSA_dataset(dataframe, geo_ID, geo_ID_col):
+    training_dataframe = dataframe[dataframe[geo_ID_col] != geo_ID]
+    testing_dataframe = dataframe[dataframe[geo_ID_col] == geo_ID]
+    return training_dataframe, testing_dataframe
+
+
+def save_in_HSA_dictionary(
+    prediction_week,
+    ROC_by_week,
+    accuracy_by_week,
+    sensitivity_by_week,
+    specificity_by_week,
+    ppv_by_week,
+    npv_by_week,
+    ROC_by_HSA,
+    accuracy_by_HSA,
+    sensitivity_by_HSA,
+    specificity_by_HSA,
+    ppv_by_HSA,
+    npv_by_HSA,
+):
+    ROC_by_HSA[prediction_week] = ROC_by_week
+    accuracy_by_HSA[prediction_week] = accuracy_by_week
+    sensitivity_by_HSA[prediction_week] = sensitivity_by_week
+    specificity_by_HSA[prediction_week] = specificity_by_week
+    ppv_by_HSA[prediction_week] = ppv_by_week
+    npv_by_HSA[prediction_week] = npv_by_week

@@ -423,44 +423,137 @@ def generate_decision_tree_graph(classifier, class_names, feature_names):
     return graph
 
 
-def cross_validation_leave_geo_out(data, geography_column, geo_split, no_iterations, cv, classifier, param_grid, no_iterations_param, no_weeks_train,no_weeks_test, weeks_in_future, weight_col, keep_output, time_period):
-        best_hyperparameters_per_iter = []
-        auROC_per_iter = []
+def cross_validation_leave_geo_out(
+    data,
+    geography_column,
+    geo_split,
+    no_iterations,
+    cv,
+    classifier,
+    param_grid,
+    no_iterations_param,
+    no_weeks_train,
+    no_weeks_test,
+    weeks_in_future,
+    weight_col,
+    keep_output,
+    time_period,
+):
+    best_hyperparameters_per_iter = []
+    auROC_per_iter = []
 
-        for i in range(no_iterations):
-                #subset the HSAs from the full dataset 
-                geo_names = data[geography_column].unique()
-                num_names_to_select = int(geo_split * len(geo_names))
-                geos_for_sample = random.sample(list(geo_names), num_names_to_select)
-                subset_HSAs_for_train = data[data[geography_column].isin(geos_for_sample)]
-                subset_HSAs_for_test = data[~data[geography_column].isin(geos_for_sample)]
+    for i in range(no_iterations):
+        # subset the HSAs from the full dataset
+        geo_names = data[geography_column].unique()
+        num_names_to_select = int(geo_split * len(geo_names))
+        geos_for_sample = random.sample(list(geo_names), num_names_to_select)
+        subset_HSAs_for_train = data[data[geography_column].isin(geos_for_sample)]
+        subset_HSAs_for_test = data[~data[geography_column].isin(geos_for_sample)]
 
-                #create training and test data
-                if time_period == 'period':
-                        X_sample_train, y_sample_train, weights_train, missing_data_train_HSA = prep_training_test_data_period(subset_HSAs_for_train, no_weeks = no_weeks_train, weeks_in_future = weeks_in_future,  geography = geography_column, weight_col = weight_col,keep_output = keep_output)
-                        X_sample_test, y_sample_test, weights_test, missing_data_train_HSA = prep_training_test_data_period(subset_HSAs_for_test, no_weeks = no_weeks_test, weeks_in_future = weeks_in_future,  geography = geography_column, weight_col = weight_col,keep_output = keep_output)
-                        weights_train = weights_train[0]
-                elif time_period == 'exact':
-                        X_sample_train, y_sample_train, weights_train, missing_data_train_HSA = prep_training_test_data(subset_HSAs_for_train, no_weeks = no_weeks_train, weeks_in_future = weeks_in_future,  geography = geography_column, weight_col =weight_col,keep_output = keep_output)
-                        X_sample_test, y_sample_test, weights_test, missing_data_train_HSA = prep_training_test_data(subset_HSAs_for_test, no_weeks = no_weeks_test, weeks_in_future = weeks_in_future,  geography = geography_column, weight_col = weight_col,keep_output = keep_output)
-                        weights_train = weights_train[0]
-                elif time_period == 'shifted':
-                        X_sample_train, y_sample_train, weights_train, missing_data_train_HSA = prep_training_test_data_shifted(subset_HSAs_for_train, no_weeks = no_weeks_train, weeks_in_future = weeks_in_future,  geography = geography_column, weight_col = weight_col,keep_output = keep_output)
-                        X_sample_test, y_sample_test, weights_test, missing_data_train_HSA = prep_training_test_data_shifted(subset_HSAs_for_test, no_weeks = no_weeks_test, weeks_in_future = weeks_in_future,  geography = geography_column, weight_col = weight_col,keep_output = keep_output)
-                        weights_train = weights_train[0]
-                random_search = RandomizedSearchCV(classifier, param_grid, n_iter=no_iterations_param, cv=cv, random_state=10)
-                random_search.fit(X_sample_train, y_sample_train, sample_weight = weights_train)
-                best_params = random_search.best_params_
+        # create training and test data
+        if time_period == "period":
+            (
+                X_sample_train,
+                y_sample_train,
+                weights_train,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_period(
+                subset_HSAs_for_train,
+                no_weeks=no_weeks_train,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            (
+                X_sample_test,
+                y_sample_test,
+                weights_test,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_period(
+                subset_HSAs_for_test,
+                no_weeks=no_weeks_test,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            weights_train = weights_train[0]
+        elif time_period == "exact":
+            (
+                X_sample_train,
+                y_sample_train,
+                weights_train,
+                missing_data_train_HSA,
+            ) = prep_training_test_data(
+                subset_HSAs_for_train,
+                no_weeks=no_weeks_train,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            (
+                X_sample_test,
+                y_sample_test,
+                weights_test,
+                missing_data_train_HSA,
+            ) = prep_training_test_data(
+                subset_HSAs_for_test,
+                no_weeks=no_weeks_test,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            weights_train = weights_train[0]
+        elif time_period == "shifted":
+            (
+                X_sample_train,
+                y_sample_train,
+                weights_train,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_shifted(
+                subset_HSAs_for_train,
+                no_weeks=no_weeks_train,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            (
+                X_sample_test,
+                y_sample_test,
+                weights_test,
+                missing_data_train_HSA,
+            ) = prep_training_test_data_shifted(
+                subset_HSAs_for_test,
+                no_weeks=no_weeks_test,
+                weeks_in_future=weeks_in_future,
+                geography=geography_column,
+                weight_col=weight_col,
+                keep_output=keep_output,
+            )
+            weights_train = weights_train[0]
+        random_search = RandomizedSearchCV(
+            classifier, param_grid, n_iter=no_iterations_param, cv=cv, random_state=10
+        )
+        random_search.fit(X_sample_train, y_sample_train, sample_weight=weights_train)
+        best_params = random_search.best_params_
 
         # Create the Decision Tree classifier with the best hyperparameters
-                model = DecisionTreeClassifier(**best_params,random_state=10, class_weight='balanced')
-                model_fit = model.fit(X_sample_train, y_sample_train, sample_weight=weights_train)
-                y_pred = model_fit.predict_proba(X_sample_test)
-                # Evaluate the accuracy of the model
-                best_hyperparameters_per_iter.append(best_params)
-                auROC_per_iter.append(roc_auc_score(y_sample_test, y_pred[:,1]))
-        
-        return best_hyperparameters_per_iter[np.argmax(np.array(auROC_per_iter))]
+        model = DecisionTreeClassifier(
+            **best_params, random_state=10, class_weight="balanced"
+        )
+        model_fit = model.fit(
+            X_sample_train, y_sample_train, sample_weight=weights_train
+        )
+        y_pred = model_fit.predict_proba(X_sample_test)
+        # Evaluate the accuracy of the model
+        best_hyperparameters_per_iter.append(best_params)
+        auROC_per_iter.append(roc_auc_score(y_sample_test, y_pred[:, 1]))
+
+    return best_hyperparameters_per_iter[np.argmax(np.array(auROC_per_iter))]
 
 
 def LOOCV_by_HSA_dataset(dataframe, geo_ID, geo_ID_col):
@@ -492,92 +585,108 @@ def save_in_HSA_dictionary(
     npv_by_HSA[prediction_week] = npv_by_week
 
 
-def prep_training_test_data_shifted(data, no_weeks, weeks_in_future, geography, weight_col, keep_output):
-## Get the weeks for the x and y datasets   
-    x_weeks = []  
+def prep_training_test_data_shifted(
+    data, no_weeks, weeks_in_future, geography, weight_col, keep_output
+):
+    ## Get the weeks for the x and y datasets
+    x_weeks = []
     y_weeks = []
-    y_weeks_to_check = [] #check these weeks to see if any of them are equal to 1
+    y_weeks_to_check = []  # check these weeks to see if any of them are equal to 1
     for week in no_weeks:
         test_week = int(week) + weeks_in_future
-        x_weeks.append('_' + num2words(week) + '_')
-        for week_y in range(week+2, test_week+2):
-                y_weeks_to_check.append('_' + num2words(week_y) + '_')
-        y_weeks.append('_' + num2words(test_week) + '_')
-    
-## Divide up the test/train split
-    #if is_geographic:
-        # Calculate the index to start slicing from
+        x_weeks.append("_" + num2words(week) + "_")
+        for week_y in range(week + 2, test_week + 2):
+            y_weeks_to_check.append("_" + num2words(week_y) + "_")
+        y_weeks.append("_" + num2words(test_week) + "_")
+    ## Divide up the test/train split
+    # if is_geographic:
+    # Calculate the index to start slicing from
     #    start_index = len(data['county']) // proportion[0] * proportion[1]
-        # Divide up the dataset based on this proportion
+    # Divide up the dataset based on this proportion
     #    first_two_thirds = data['county'][:start_index]
     #    last_third = data['county'][start_index:]
     X_data = pd.DataFrame()
     y_data = pd.DataFrame()
-    weights_all =  pd.DataFrame()
+    weights_all = pd.DataFrame()
     missing_data = []
-    ## Now get the training data 
+    ## Now get the training data
     k = 0
     for x_week in x_weeks:
-            y_week = y_weeks[k]
-            k +=1
+        y_week = y_weeks[k]
+        k += 1
 
-            weeks_x = [col for col in data.columns if x_week in col]
-            columns_x  = [geography] + weeks_x + [weight_col]
-            data_x = data[columns_x]
+        weeks_x = [col for col in data.columns if x_week in col]
+        columns_x = [geography] + weeks_x + [weight_col]
+        data_x = data[columns_x]
 
-            weeks_y = [col for col in data.columns if y_week in col]
-            columns_y  = [geography] + weeks_y
-            data_y = data[columns_y]
-            ### now add the final column to the y data that has it so that it's if any week in the trhee week perdiod exceeded 15
-            train_week = w2n.word_to_num(x_week.replace("_", ""))
-            target_week =  w2n.word_to_num(y_week.replace("_", ""))
-            y_weeks_to_check = []
-            for week_to_check in range(train_week + 1, target_week + 1):
-                y_weeks_to_check.append('_' + num2words(week_to_check) + '_')
+        weeks_y = [col for col in data.columns if y_week in col]
+        columns_y = [geography] + weeks_y
+        data_y = data[columns_y]
+        ### now add the final column to the y data that has it so that it's if any week in the trhee week perdiod exceeded 15
+        train_week = w2n.word_to_num(x_week.replace("_", ""))
+        target_week = w2n.word_to_num(y_week.replace("_", ""))
+        y_weeks_to_check = []
+        for week_to_check in range(
+            train_week + 2, target_week + 2
+        ):  # have to ensure you skip the next week for getting the excess
+            y_weeks_to_check.append("_" + num2words(week_to_check) + "_")
+            print(y_weeks_to_check)
+        y_weeks_to_check = [week + "beds_over_15_100k" for week in y_weeks_to_check]
+        columns_to_check = [
+            col for col in data.columns if any(week in col for week in y_weeks_to_check)
+        ]
+        y_over_in_period = data[columns_to_check].apply(max, axis=1)
+        data_y = pd.concat([data_y, y_over_in_period], axis=1)
+        # ensure they have the same amount of data
+        # remove rows in test_data1 with NA in test_data2
+        data_x = data_x.dropna()
+        data_x = data_x[data_x[geography].isin(data_y[geography])]
+        # remove rows in test_data2 with NA in test_data1
+        data_y = data_y.dropna()
+        data_y = data_y[data_y[geography].isin(data_x[geography])]
+        data_x = data_x[data_x[geography].isin(data_y[geography])]
+        data_x_no_HSA = len(data_x[geography].unique())
 
-            y_weeks_to_check = [week + 'beds_over_15_100k' for week in y_weeks_to_check]
-            columns_to_check = [col for col in data.columns if any(week in col for week in y_weeks_to_check)]
-            y_over_in_period = data[columns_to_check].apply(max, axis=1)
-            data_y = pd.concat([data_y, y_over_in_period], axis=1)
-            # ensure they have the same amount of data
-            #remove rows in test_data1 with NA in test_data2
-            data_x = data_x.dropna()
-            data_x = data_x[data_x[geography].isin(data_y[geography])]
-            # remove rows in test_data2 with NA in test_data1
-            data_y = data_y.dropna()
-            data_y = data_y[data_y[geography].isin(data_x[geography])]
-            data_x = data_x[data_x[geography].isin(data_y[geography])]
-            data_x_no_HSA = len(data_x[geography].unique())
+        missing_data.append(
+            (
+                (len(data[geography].unique()) - data_x_no_HSA)
+                / len(data[geography].unique())
+            )
+            * 100
+        )
+        # get weights
+        # weights = weight_data[weight_data[geography].isin(data_x[geography])][[geography, weight_col]]
 
-            missing_data.append(((len(data[geography].unique()) - data_x_no_HSA)/len(data[geography].unique())) * 100)
-            # get weights 
-            #weights = weight_data[weight_data[geography].isin(data_x[geography])][[geography, weight_col]]
+        X_week = data_x.iloc[:, 1 : len(columns_x)]  # take away y, leave weights for mo
+        y_week = data_y.iloc[:, -1]
 
-            X_week = data_x.iloc[:, 1:len(columns_x)]  # take away y, leave weights for mo
-            y_week = data_y.iloc[:, -1] 
-            
-            y_week = y_week.astype(int)
+        y_week = y_week.astype(int)
 
-            weights = X_week.iloc[:, -1] 
-            if keep_output:
-                X_week = X_week.iloc[:, :len(X_week.columns)-1] # remove the weights and leave "target" for that week
+        weights = X_week.iloc[:, -1]
+        if keep_output:
+            X_week = X_week.iloc[
+                :, : len(X_week.columns) - 1
+            ]  # remove the weights and leave "target" for that week
 
-                #rename columns for concatenation 
-                X_week.columns = range(1, len(data_x.columns) -1)
-            else:
-                X_week = X_week.iloc[:, :len(X_week.columns)-2] # remove the weights and  "target" for that week
+            # rename columns for concatenation
+            X_week.columns = range(1, len(data_x.columns) - 1)
+        else:
+            X_week = X_week.iloc[
+                :, : len(X_week.columns) - 2
+            ]  # remove the weights and  "target" for that week
 
-                X_week.columns = range(1, len(data_x.columns) -2)# remove the weights and  "target" for that week
+            X_week.columns = range(
+                1, len(data_x.columns) - 2
+            )  # remove the weights and  "target" for that week
 
-            y_week.columns = range(1, len(data_y.columns) -2)
-            X_data = pd.concat([X_data, X_week])
-            y_data = pd.concat([y_data, y_week]) 
-        
-            weights_all =  pd.concat([weights_all, weights]) 
+        y_week.columns = range(1, len(data_y.columns) - 2)
+        X_data = pd.concat([X_data, X_week])
+        y_data = pd.concat([y_data, y_week])
 
+        weights_all = pd.concat([weights_all, weights])
 
     X_data.reset_index(drop=True, inplace=True)
     y_data.reset_index(drop=True, inplace=True)
     weights_all.reset_index(drop=True, inplace=True)
 
-    return(X_data, y_data, weights_all, missing_data)
+    return (X_data, y_data, weights_all, missing_data)

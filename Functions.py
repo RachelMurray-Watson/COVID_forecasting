@@ -690,3 +690,32 @@ def prep_training_test_data_shifted(
     weights_all.reset_index(drop=True, inplace=True)
 
     return (X_data, y_data, weights_all, missing_data)
+
+
+def LOOCV_by_HSA_dataset(dataframe, geo_ID, geo_ID_col):
+    training_dataframe = dataframe[dataframe[geo_ID_col] != geo_ID]
+    testing_dataframe = dataframe[dataframe[geo_ID_col] == geo_ID]
+    return training_dataframe, testing_dataframe
+
+
+def save_in_HSA_dictionary(
+    prediction_week,
+    ROC_by_week,
+    accuracy_by_week,
+    sensitivity_by_week,
+    specificity_by_week,
+    ppv_by_week,
+    npv_by_week,
+    ROC_by_HSA,
+    accuracy_by_HSA,
+    sensitivity_by_HSA,
+    specificity_by_HSA,
+    ppv_by_HSA,
+    npv_by_HSA,
+):
+    ROC_by_HSA[prediction_week] = ROC_by_week
+    accuracy_by_HSA[prediction_week] = accuracy_by_week
+    sensitivity_by_HSA[prediction_week] = sensitivity_by_week
+    specificity_by_HSA[prediction_week] = specificity_by_week
+    ppv_by_HSA[prediction_week] = ppv_by_week
+    npv_by_HSA[prediction_week] = npv_by_week

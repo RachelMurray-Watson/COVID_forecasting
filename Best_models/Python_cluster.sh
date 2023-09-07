@@ -6,7 +6,7 @@
 #SBATCH --mem-per-cpu=5G
 #SBATCH --time=0-23:01:00
 #SBATCH --mail-type=ALL
-
+#SBATCH --error=error.log
 #################################################
 # please DO NOT remove the following two commands
 #################################################

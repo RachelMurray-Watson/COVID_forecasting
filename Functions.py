@@ -630,7 +630,6 @@ def prep_training_test_data_shifted(
             train_week + 2, target_week + 2
         ):  # have to ensure you skip the next week for getting the excess
             y_weeks_to_check.append("_" + num2words(week_to_check) + "_")
-            print(y_weeks_to_check)
         y_weeks_to_check = [week + "beds_over_15_100k" for week in y_weeks_to_check]
         columns_to_check = [
             col for col in data.columns if any(week in col for week in y_weeks_to_check)

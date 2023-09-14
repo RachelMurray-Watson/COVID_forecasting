@@ -7,6 +7,7 @@ from IPython.display import Image
 import sklearn.tree as tree
 import random
 from PIL import Image
+import numpy as np
 
 from word2number import w2n
 from sklearn.model_selection import train_test_split

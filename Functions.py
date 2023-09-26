@@ -786,3 +786,104 @@ def convert_state_to_code(dataframe, column_name):
     dataframe["state_code"] = dataframe[column_name].map(state_to_code)
 
     return dataframe
+
+
+# Define functions for data preparation and evaluation
+def prepare_data_and_model(
+    data,
+    weeks_in_future,
+    geography,
+    weight_col,
+    keep_output,
+    time_period,
+    model_name,
+    prediction_week,
+    size_of_test_dataset,
+    train_weeks_for_initial_model,
+):
+    model_name_to_load = model_name + f"_{time_period}_{prediction_week}.sav"
+    clf_full = pickle.load(open(model_name_to_load, "rb"))
+    if time_period == "period":
+        (
+            X_train,
+            y_train,
+            weights_train,
+            missing_data_train_HSA,
+        ) = prep_training_test_data_period(
+            data=data,
+            no_weeks=range(1, int(prediction_week + train_weeks_for_initial_model) + 1),
+            weeks_in_future=weeks_in_future,
+            geography=geography,
+            weight_col=weight_col,
+            keep_output=keep_output,
+        )
+
+        (
+            X_test,
+            y_test,
+            weights_test,
+            missing_data_test_HSA,
+        ) = prep_training_test_data_period(
+            data=data,
+            no_weeks=range(
+                int(prediction_week + train_weeks_for_initial_model) + 1,
+                int(
+                    prediction_week
+                    + train_weeks_for_initial_model
+                    + size_of_test_dataset
+                )
+                + 1,
+            ),
+            weeks_in_future=weeks_in_future,
+            geography=geography,
+            weight_col=weight_col,
+            keep_output=keep_output,
+        )
+    elif time_period == "shifted":
+        (
+            X_train,
+            y_train,
+            weights_train,
+            missing_data_train_HSA,
+        ) = prep_training_test_data_shifted(
+            data=data,
+            no_weeks=range(1, int(prediction_week + train_weeks_for_initial_model) + 1),
+            weeks_in_future=weeks_in_future,
+            geography=geography,
+            weight_col=weight_col,
+            keep_output=keep_output,
+        )
+
+        (
+            X_test,
+            y_test,
+            weights_test,
+            missing_data_test_HSA,
+        ) = prep_training_test_data_shifted(
+            data=data,
+            no_weeks=range(
+                int(prediction_week + train_weeks_for_initial_model) + 1,
+                int(
+                    prediction_week
+                    + train_weeks_for_initial_model
+                    + size_of_test_dataset
+                )
+                + 1,
+            ),
+            weeks_in_future=weeks_in_future,
+            geography=geography,
+            weight_col=weight_col,
+            keep_output=keep_output,
+        )
+
+    weights_train = weights_train[0].to_numpy()
+    clf_full.fit(X_train, y_train, sample_weight=weights_train)
+
+    y_pred = clf_full.predict(X_test)
+    y_pred_proba = clf_full.predict_proba(X_test)
+
+    accuracy = accuracy_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred_proba[:, 1])
+    mcc = (matthews_corrcoef(y_test, y_pred) + 1) / 2
+
+    return accuracy, roc_auc, mcc

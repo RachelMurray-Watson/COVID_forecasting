@@ -887,3 +887,42 @@ def prepare_data_and_model(
     mcc = (matthews_corrcoef(y_test, y_pred) + 1) / 2
 
     return accuracy, roc_auc, mcc
+
+
+def calculate_maximum_reget(
+    metric, metrics_by_model, models, time_period, weeks_to_predict
+):
+    maximum_regret_by_model = {model: [] for model in models}
+
+    for prediction_week in weeks_to_predict:
+        print(prediction_week)
+        best_metric = float("-inf")
+        integers_names = [
+            w2n.word_to_num(model.split("_")[0]) if "_week" in model else 0
+            for model in models
+        ]  ## if e.g. expanding model can go to very end
+
+        for i, m in enumerate(metrics_by_model):
+            if (
+                integers_names[i] <= prediction_week
+            ):  # & (abs(max(weeks_to_predict) -  integers_names[i]) >= prediction_week):
+                model_metric = m[prediction_week]
+            else:
+                model_metric = 0
+            if model_metric >= best_metric:
+                best_metric = model_metric
+
+        for i, m in enumerate(metrics_by_model):
+            model = models[i]
+            if (
+                integers_names[i] <= prediction_week
+            ):  # & (abs(max(weeks_to_predict) -  integers_names[i]) >= prediction_week):
+                model_metric = m[prediction_week]
+
+                if model_metric >= best_metric:
+                    maximum_regret_by_model[model].append(0)
+                else:
+                    maximum_regret_by_model[model].append(best_metric - model_metric)
+            else:
+                maximum_regret_by_model[model].append(best_metric)
+    return maximum_regret_by_model

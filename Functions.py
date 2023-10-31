@@ -444,14 +444,15 @@ def cross_validation_leave_geo_out(
     auROC_per_iter = []
 
     for i in range(no_iterations):
-        # subset the HSAs from the full dataset
+        print(i)
+        # Subset the HSAs from the full dataset
         geo_names = data[geography_column].unique()
         num_names_to_select = int(geo_split * len(geo_names))
         geos_for_sample = random.sample(list(geo_names), num_names_to_select)
         subset_HSAs_for_train = data[data[geography_column].isin(geos_for_sample)]
         subset_HSAs_for_test = data[~data[geography_column].isin(geos_for_sample)]
 
-        # create training and test data
+        # Create training and test data
         if time_period == "period":
             (
                 X_sample_train,
@@ -536,6 +537,103 @@ def cross_validation_leave_geo_out(
                 keep_output=keep_output,
             )
             weights_train = weights_train[0]
+
+        # Check if y_sample_test contains only 1's
+        while (int(y_sample_test.sum().iloc[0]) / len(y_sample_test)) == 1:
+            print("All 1")
+            # Subset the HSAs from the full dataset
+            geo_names = data[geography_column].unique()
+            num_names_to_select = int(geo_split * len(geo_names))
+            geos_for_sample = random.sample(list(geo_names), num_names_to_select)
+            subset_HSAs_for_train = data[data[geography_column].isin(geos_for_sample)]
+            subset_HSAs_for_test = data[~data[geography_column].isin(geos_for_sample)]
+
+            # Create training and test data
+            if time_period == "period":
+                (
+                    X_sample_train,
+                    y_sample_train,
+                    weights_train,
+                    missing_data_train_HSA,
+                ) = prep_training_test_data_period(
+                    subset_HSAs_for_train,
+                    no_weeks=no_weeks_train,
+                    weeks_in_future=weeks_in_future,
+                    geography=geography_column,
+                    weight_col=weight_col,
+                    keep_output=keep_output,
+                )
+                (
+                    X_sample_test,
+                    y_sample_test,
+                    weights_test,
+                    missing_data_train_HSA,
+                ) = prep_training_test_data_period(
+                    subset_HSAs_for_test,
+                    no_weeks=no_weeks_test,
+                    weeks_in_future=weeks_in_future,
+                    geography=geography_column,
+                    weight_col=weight_col,
+                    keep_output=keep_output,
+                )
+                weights_train = weights_train[0]
+            elif time_period == "exact":
+                (
+                    X_sample_train,
+                    y_sample_train,
+                    weights_train,
+                    missing_data_train_HSA,
+                ) = prep_training_test_data(
+                    subset_HSAs_for_train,
+                    no_weeks=no_weeks_train,
+                    weeks_in_future=weeks_in_future,
+                    geography=geography_column,
+                    weight_col=weight_col,
+                    keep_output=keep_output,
+                )
+                (
+                    X_sample_test,
+                    y_sample_test,
+                    weights_test,
+                    missing_data_train_HSA,
+                ) = prep_training_test_data(
+                    subset_HSAs_for_test,
+                    no_weeks=no_weeks_test,
+                    weeks_in_future=weeks_in_future,
+                    geography=geography_column,
+                    weight_col=weight_col,
+                    keep_output=keep_output,
+                )
+                weights_train = weights_train[0]
+            elif time_period == "shifted":
+                (
+                    X_sample_train,
+                    y_sample_train,
+                    weights_train,
+                    missing_data_train_HSA,
+                ) = prep_training_test_data_shifted(
+                    subset_HSAs_for_train,
+                    no_weeks=no_weeks_train,
+                    weeks_in_future=weeks_in_future,
+                    geography=geography_column,
+                    weight_col=weight_col,
+                    keep_output=keep_output,
+                )
+                (
+                    X_sample_test,
+                    y_sample_test,
+                    weights_test,
+                    missing_data_train_HSA,
+                ) = prep_training_test_data_shifted(
+                    subset_HSAs_for_test,
+                    no_weeks=no_weeks_test,
+                    weeks_in_future=weeks_in_future,
+                    geography=geography_column,
+                    weight_col=weight_col,
+                    keep_output=keep_output,
+                )
+                weights_train = weights_train[0]
+
         random_search = RandomizedSearchCV(
             classifier, param_grid, n_iter=no_iterations_param, cv=cv, random_state=10
         )
@@ -550,6 +648,7 @@ def cross_validation_leave_geo_out(
             X_sample_train, y_sample_train, sample_weight=weights_train
         )
         y_pred = model_fit.predict_proba(X_sample_test)
+
         # Evaluate the accuracy of the model
         best_hyperparameters_per_iter.append(best_params)
         auROC_per_iter.append(roc_auc_score(y_sample_test, y_pred[:, 1]))

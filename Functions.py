@@ -32,7 +32,6 @@ def add_labels_to_subplots(axs, hfont, height, fontsize):
     return labels_subplots
 
 
-### this code it's exactly in  x weeks
 def merge_and_rename_data(data1, data2, on_column, suffix1, suffix2):
     merged_data = pd.merge(
         data1, data2, on=on_column, suffixes=("_" + suffix1, "_" + suffix2)

@@ -1125,3 +1125,23 @@ def prepare_data_and_model(
     mcc = (matthews_corrcoef(y_test, y_pred) + 1) / 2
 
     return accuracy, roc_auc, mcc
+
+
+def simplify_labels_graphviz(graph):
+    for node in graph.get_node_list():
+        if node.get_attributes().get("label") is None:
+            continue
+        else:
+            split_label = node.get_attributes().get("label").split("<br/>")
+            if len(split_label) == 4:
+                split_label[3] = split_label[3].split("=")[1].strip()
+
+                del split_label[1]  # number of samples
+                del split_label[1]  # split of sample
+            elif len(split_label) == 3:  # for a terminating node, no rule is provided
+                split_label[2] = split_label[2].split("=")[1].strip()
+
+                del split_label[0]  # number of samples
+                del split_label[0]  # split of samples
+                split_label[0] = "<" + split_label[0]
+            node.set("label", "<br/>".join(split_label))

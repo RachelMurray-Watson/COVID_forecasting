@@ -17,6 +17,7 @@ from sklearn.metrics import roc_auc_score
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pickle
 
 
 def add_labels_to_subplots(axs, hfont, height, fontsize):

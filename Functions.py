@@ -13,7 +13,7 @@ from word2number import w2n
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 import matplotlib.pyplot as plt
 import seaborn as sns

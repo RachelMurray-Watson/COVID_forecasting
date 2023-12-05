@@ -372,22 +372,18 @@ def determine_covid_outcome_indicator(
     new_cases_per_100k, new_admits_per_100k, percent_beds_100k
 ):
     if new_cases_per_100k < 200:
-        if (new_admits_per_100k >= 10) | (
-            percent_beds_100k > 0.10
-        ):  # Changed .10 to 0.10
+        if (new_admits_per_100k >= 10) | (percent_beds_100k > 0.10):
             if (new_admits_per_100k >= 20) | (percent_beds_100k >= 15):
-                return "High"
+                return 1
             else:
-                return "Medium"
+                return 0
         else:
-            return "Low"
+            return 0
     elif new_cases_per_100k >= 200:
-        if (new_admits_per_100k >= 10) | (
-            percent_beds_100k >= 0.10
-        ):  # Changed .10 to 0.10
-            return "High"
+        if (new_admits_per_100k >= 10) | (percent_beds_100k >= 0.10):
+            return 1
         elif (new_admits_per_100k < 10) | (percent_beds_100k < 10):
-            return "Medium"
+            return 1
 
 
 def simplify_labels_graphviz(graph):
@@ -1179,3 +1175,17 @@ def calculate_maximum_reget(
                 maximum_regret_by_model[model].append(best_metric - model_metric)
 
     return maximum_regret_by_model
+
+
+def calculate_ppv_npv(confusion_matrix):
+    # Extract values from the confusion matrix
+    TP = confusion_matrix[1, 1]
+    FP = confusion_matrix[0, 1]
+    TN = confusion_matrix[0, 0]
+    FN = confusion_matrix[1, 0]
+
+    # Calculate PPV (Precision) and NPV
+    ppv = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    npv = TN / (TN + FN) if (TN + FN) > 0 else 0.0
+
+    return ppv, npv

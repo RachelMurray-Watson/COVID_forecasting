@@ -325,6 +325,24 @@ def calculate_metrics(confusion_matrix):
     return sensitivity, specificity, ppv, npv
 
 
+def merge_and_rename_data(data1, data2, on_column, suffix1, suffix2):
+    merged_data = pd.merge(
+        data1, data2, on=on_column, suffixes=("_" + suffix1, "_" + suffix2)
+    )
+
+    new_column_names = [
+        col.replace(f"_{on_column}_{suffix1}", f"_{suffix1}").replace(
+            f"_{on_column}_{suffix2}", f"_{suffix2}"
+        )
+        for col in merged_data.columns
+    ]
+    merged_data.rename(
+        columns=dict(zip(merged_data.columns, new_column_names)), inplace=True
+    )
+
+    return merged_data
+
+
 def pivot_data_by_HSA(data, index_column, columns_column, values_column):
     data_by_HSA = data[[index_column, columns_column, values_column]]
     pivot_table = data_by_HSA.pivot_table(
@@ -1171,3 +1189,36 @@ def calculate_ppv_npv(confusion_matrix):
     npv = TN / (TN + FN) if (TN + FN) > 0 else 0.0
 
     return ppv, npv
+
+
+# Get summary statistics
+
+
+def process_feature_data(strings, data_dataframe, reults_dataframe):
+    result_df_below = pd.DataFrame(columns=["Subset", "Mean", "Std Deviation"])
+
+    for col in strings:
+        feature_data_wide = data_dataframe.filter(regex=col)
+        feature_data = pd.melt(
+            feature_data_wide, var_name="Feature", value_name="Value"
+        )
+
+        mean_val = feature_data["Value"].mean()
+        std_dev_val = feature_data["Value"].std()
+
+        # Append the results to the result DataFrame
+        reults_dataframe = pd.concat(
+            [
+                reults_dataframe,
+                pd.DataFrame(
+                    {
+                        "Subset": [col],
+                        "Mean": [mean_val],
+                        "Std Deviation": [std_dev_val],
+                    }
+                ),
+            ],
+            ignore_index=True,
+        )
+
+    return reults_dataframe

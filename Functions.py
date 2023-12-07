@@ -45,9 +45,9 @@ def merge_and_rename_data(data1, data2, on_column, suffix1, suffix2):
     )
 
     new_column_names = [
-        col.replace(f"_{on_column}_{suffix1}", f"_{suffix1}").replace(
-            f"_{on_column}_{suffix2}", f"_{suffix2}"
-        )
+        str(col)
+        .replace(f"_{on_column}_{suffix1}", f"_{suffix1}")
+        .replace(f"_{on_column}_{suffix2}", f"_{suffix2}")
         for col in merged_data.columns
     ]
     merged_data.rename(

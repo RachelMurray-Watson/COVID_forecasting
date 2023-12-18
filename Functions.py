@@ -225,7 +225,7 @@ def prep_training_test_data_period(
     return (X_data, y_data, weights_all, missing_data)
 
 
-### this code it's ANY in the x week period
+### this code it's exactly in the x weeks away
 def prep_training_test_data(
     data, no_weeks, weeks_in_future, geography, weight_col, keep_output
 ):
@@ -922,6 +922,43 @@ def prepare_data_and_model(
             weight_col=weight_col,
             keep_output=keep_output,
         )
+    elif time_period == "exact":
+        (
+            X_train,
+            y_train,
+            weights_train,
+            missing_data_train_HSA,
+        ) = prep_training_test_data(
+            data=data,
+            no_weeks=range(1, int(prediction_week + train_weeks_for_initial_model) + 1),
+            weeks_in_future=weeks_in_future,
+            geography=geography,
+            weight_col=weight_col,
+            keep_output=keep_output,
+        )
+
+        (
+            X_test,
+            y_test,
+            weights_test,
+            missing_data_test_HSA,
+        ) = prep_training_test_data(
+            data=data,
+            no_weeks=range(
+                int(prediction_week + train_weeks_for_initial_model),
+                int(
+                    prediction_week
+                    + train_weeks_for_initial_model
+                    + size_of_test_dataset
+                )
+                + 1,
+            ),
+            weeks_in_future=weeks_in_future,
+            geography=geography,
+            weight_col=weight_col,
+            keep_output=keep_output,
+        )
+
     elif time_period == "shifted":
         (
             X_train,

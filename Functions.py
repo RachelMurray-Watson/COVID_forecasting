@@ -1214,8 +1214,6 @@ def calculate_ppv_npv(confusion_matrix):
 
 
 def process_feature_data(strings, data_dataframe, reults_dataframe):
-    result_df_below = pd.DataFrame(columns=["Subset", "Mean", "Std Deviation"])
-
     for col in strings:
         feature_data_wide = data_dataframe.filter(regex=col)
         feature_data = pd.melt(

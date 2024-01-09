@@ -1012,39 +1012,27 @@ def prepare_data_and_model(
 def calculate_maximum_reget(
     metric, metrics_by_model, models, time_period, weeks_to_predict
 ):
+    metric_data = metrics_by_model[metric]
+
     maximum_regret_by_model = {model: [] for model in models}
-
-    for prediction_week in weeks_to_predict:
-        print(prediction_week)
+    for j, prediction_week in enumerate(weeks_to_predict):
         best_metric = float("-inf")
-        integers_names = [
-            w2n.word_to_num(model.split("_")[0]) if "_week" in model else 0
-            for model in models
-        ]  ## if e.g. expanding model can go to very end
 
-        for i, m in enumerate(metrics_by_model):
-            if (
-                integers_names[i] <= prediction_week
-            ):  # & (abs(max(weeks_to_predict) -  integers_names[i]) >= prediction_week):
-                model_metric = m[prediction_week]
-            else:
-                model_metric = 0
+        for i, m in enumerate(metric_data):
+            m = list(metric_data.values())[i]
+            model_metric = m[prediction_week]
             if model_metric >= best_metric:
                 best_metric = model_metric
 
-        for i, m in enumerate(metrics_by_model):
+        for i, m in enumerate(metric_data):
+            m = list(metric_data.values())[i]
+            model_metric = m[prediction_week]
             model = models[i]
-            if (
-                integers_names[i] <= prediction_week
-            ):  # & (abs(max(weeks_to_predict) -  integers_names[i]) >= prediction_week):
-                model_metric = m[prediction_week]
-
-                if model_metric >= best_metric:
-                    maximum_regret_by_model[model].append(0)
-                else:
-                    maximum_regret_by_model[model].append(best_metric - model_metric)
+            if model_metric >= best_metric:
+                maximum_regret_by_model[model].append(0)
             else:
-                maximum_regret_by_model[model].append(best_metric)
+                maximum_regret_by_model[model].append(best_metric - model_metric)
+
     return maximum_regret_by_model
 
 

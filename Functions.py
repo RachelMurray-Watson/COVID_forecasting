@@ -1009,33 +1009,6 @@ def prepare_data_and_model(
     return accuracy, roc_auc, mcc
 
 
-def calculate_maximum_reget(
-    metric, metrics_by_model, models, time_period, weeks_to_predict
-):
-    metric_data = metrics_by_model[metric]
-
-    maximum_regret_by_model = {model: [] for model in models}
-    for j, prediction_week in enumerate(weeks_to_predict):
-        best_metric = float("-inf")
-
-        for i, m in enumerate(metric_data):
-            m = list(metric_data.values())[i]
-            model_metric = m[prediction_week]
-            if model_metric >= best_metric:
-                best_metric = model_metric
-
-        for i, m in enumerate(metric_data):
-            m = list(metric_data.values())[i]
-            model_metric = m[prediction_week]
-            model = models[i]
-            if model_metric >= best_metric:
-                maximum_regret_by_model[model].append(0)
-            else:
-                maximum_regret_by_model[model].append(best_metric - model_metric)
-
-    return maximum_regret_by_model
-
-
 def simplify_labels_graphviz(graph):
     for node in graph.get_node_list():
         if node.get_attributes().get("label") is None:
@@ -1054,33 +1027,6 @@ def simplify_labels_graphviz(graph):
                 del split_label[0]  # split of samples
                 split_label[0] = "<" + split_label[0]
             node.set("label", "<br/>".join(split_label))
-
-
-def calculate_maximum_reget(
-    metric, metrics_by_model, models, time_period, weeks_to_predict
-):
-    metric_data = metrics_by_model[metric]
-
-    maximum_regret_by_model = {model: [] for model in models}
-    for j, prediction_week in enumerate(weeks_to_predict):
-        best_metric = float("-inf")
-
-        for i, m in enumerate(metric_data):
-            m = list(metric_data.values())[i]
-            model_metric = m[prediction_week]
-            if model_metric >= best_metric:
-                best_metric = model_metric
-
-        for i, m in enumerate(metric_data):
-            m = list(metric_data.values())[i]
-            model_metric = m[prediction_week]
-            model = models[i]
-            if model_metric >= best_metric:
-                maximum_regret_by_model[model].append(0)
-            else:
-                maximum_regret_by_model[model].append(best_metric - model_metric)
-
-    return maximum_regret_by_model
 
 
 def calculate_ppv_npv(confusion_matrix):
@@ -1126,3 +1072,31 @@ def process_feature_data(strings, data_dataframe, reults_dataframe):
         )
 
     return reults_dataframe
+
+
+def calculate_maximum_reget(
+    metric, metrics_by_model, models, time_period, weeks_to_predict
+):
+    metric_data = metrics_by_model[metric]
+
+    maximum_regret_by_model = {model: [] for model in models}
+    for j, prediction_week in enumerate(weeks_to_predict):
+        print(prediction_week)
+        best_metric = float("-inf")
+
+        for i, m in enumerate(metric_data):
+            m = list(metric_data.values())[i]
+            model_metric = m[prediction_week]
+            if model_metric >= best_metric:
+                best_metric = model_metric
+
+        for i, m in enumerate(metric_data):
+            m = list(metric_data.values())[i]
+            model_metric = m[prediction_week]
+            model = models[i]
+            if model_metric >= best_metric:
+                maximum_regret_by_model[model].append(0)
+            else:
+                maximum_regret_by_model[model].append(best_metric - model_metric)
+
+    return maximum_regret_by_model

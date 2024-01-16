@@ -884,7 +884,7 @@ def prepare_data_and_model(
     size_of_test_dataset,
     train_weeks_for_initial_model,
 ):
-    model_name_to_load = model_name + f"_{time_period}_{prediction_week}.sav"
+    model_name_to_load = model_name + f"{time_period}_{prediction_week}.sav"
     clf_full = pickle.load(open(model_name_to_load, "rb"))
     if time_period == "period":
         (

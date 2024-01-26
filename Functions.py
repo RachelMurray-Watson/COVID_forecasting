@@ -1100,3 +1100,70 @@ def calculate_maximum_reget(
                 maximum_regret_by_model[model].append(best_metric - model_metric)
 
     return maximum_regret_by_model
+
+
+def convert_state_to_code(dataframe, column_name):
+    # List of state names in alphabetical order, including Washington, D.C.
+    state_names = [
+        "Alabama",
+        "Alaska",
+        "Arizona",
+        "Arkansas",
+        "California",
+        "Colorado",
+        "Connecticut",
+        "Delaware",
+        "Florida",
+        "Georgia",
+        "Hawaii",
+        "Idaho",
+        "Illinois",
+        "Indiana",
+        "Iowa",
+        "Kansas",
+        "Kentucky",
+        "Louisiana",
+        "Maine",
+        "Maryland",
+        "Massachusetts",
+        "Michigan",
+        "Minnesota",
+        "Mississippi",
+        "Missouri",
+        "Montana",
+        "Nebraska",
+        "Nevada",
+        "New Hampshire",
+        "New Jersey",
+        "New Mexico",
+        "New York",
+        "North Carolina",
+        "North Dakota",
+        "Ohio",
+        "Oklahoma",
+        "Oregon",
+        "Pennsylvania",
+        "Rhode Island",
+        "South Carolina",
+        "South Dakota",
+        "Tennessee",
+        "Texas",
+        "Utah",
+        "Vermont",
+        "Virginia",
+        "Washington",
+        "West Virginia",
+        "Wisconsin",
+        "Wyoming",
+        "Washington D.C.",
+    ]
+
+    # Create a dictionary to map state names to numerical codes
+    state_to_code = {
+        state: f"{index + 1:02}" for index, state in enumerate(state_names)
+    }
+
+    # Create a new column "state_code" based on the mapping
+    dataframe["state_code"] = dataframe[column_name].map(state_to_code)
+
+    return dataframe
